@@ -18,14 +18,24 @@ y_rqt = -1
 player = 0
 x2_rqt = -1
 y2_rqt = -1
+x_bola = -1
+y_bola = -1
+colidiu = False
 
 def respondendo():
 
     global x_rqt
     global y_rqt
+
     global player
+
     global x2_rqt
     global y2_rqt
+
+    global x_bola
+    global y_bola
+
+    global colidiu
 
     while(1):
 
@@ -39,6 +49,10 @@ def respondendo():
         data = json.loads(tcp.recv(1024).decode())
         x2_rqt = data["x"]
         y2_rqt = data["y"]
+        x_bola = data["x_bola"]
+        y_bola = data["y_bola"]
+        if(not colidiu):
+            colidiu = data["colidiu"]
 
 
 def exibir_tela_online():
@@ -48,6 +62,9 @@ def exibir_tela_online():
     global x2_rqt
     global y2_rqt
     global player
+    global colidiu
+    global x_bola
+    global y_bola
 
     nome = ""
     while(len(nome) < 1 or len(nome) > 10):
@@ -116,10 +133,6 @@ def exibir_tela_online():
         raquete2 = pygame.image.load(const.img_raquete1)
         raquete = pygame.image.load(const.img_raquete2)
 
-    #CRIAÇÃO DE MÁSCARAS PARA VERIFICAR COLISÕES ENTRE AS IMAGENS
-    mascara_bola = pygame.mask.from_surface(bola)
-    mascara_rqt = pygame.mask.from_surface(raquete)
-
     som_raquete = pygame.mixer.Sound('sons/som_raquete.ogg')
     som_mesa = pygame.mixer.Sound('sons/som_mesa.ogg')
     som_aplausos = pygame.mixer.Sound('sons/som_aplausos.ogg')
@@ -147,9 +160,14 @@ def exibir_tela_online():
         if tecla[K_d]:
             x_rqt = R_praDireita(x_rqt, limite_direita)
 
+        if(colidiu):
+            som_raquete.play()
+            colidiu = False
+
         #ATUALIZANDO A POSIÇÃO DOS ELEMENTOS DO JOGO
         const.tela.blit(raquete, (x_rqt, y_rqt))
         const.tela.blit(raquete2,(x2_rqt, y2_rqt))
+        const.tela.blit(bola, (x_bola, y_bola))
         pygame.display.flip()
 
         
