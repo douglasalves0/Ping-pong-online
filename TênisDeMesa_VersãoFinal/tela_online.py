@@ -1,8 +1,9 @@
 import threading
-import pygame, tela_menu
+import pygame
+from pygame.locals import *
+import tela_menu
 from desenha import desenha
 import constantes as const
-from pygame.locals import *
 from sys import exit
 from sorteio import *
 from raquete import *
@@ -18,40 +19,26 @@ player = 0
 x2_rqt = -1
 y2_rqt = -1
 
-def esperando():
-    
-    #Vai esperar:
-    #   -colisões
-    #   -posição da bola
-    #   -posição da outra raquete
-    #   -pontuação1/pontuação2
-    #   -sets1/sets2
-    #   -se o jogo acabou ou não
-    
-    global x2_rqt
-    global y2_rqt
-
-    while(1):    
-        data = json.loads(tcp.recv(1024).decode())
-        x2_rqt = data["x"]
-        y2_rqt = data["y"]
-        print(data)
-
 def respondendo():
 
     global x_rqt
     global y_rqt
     global player
+    global x2_rqt
+    global y2_rqt
 
     while(1):
 
         pack = {
-            "posx":x_rqt,
-            "posy":y_rqt
+            "player":player,
+            "x":x_rqt,
+            "y":y_rqt
         }
 
         tcp.send(json.dumps(pack).encode())
-        sleep(0.05)
+        data = json.loads(tcp.recv(1024).decode())
+        x2_rqt = data["x"]
+        y2_rqt = data["y"]
 
 
 def exibir_tela_online():
@@ -81,12 +68,15 @@ def exibir_tela_online():
     print("AGUARDANDO OUTROS JOGADORES...")
 
     #Esperando o servidor confirmar qual jogador você é
-    mensagem = json.loads(tcp.recv(1024).decode())
+    mensagem = tcp.recv(1024).decode()
+    print(mensagem)
+    mensagem = json.loads(mensagem)
+    tcp.send("{}".encode())
 
     player = int(mensagem["player"])
     
-    x_rqt = int(mensagem["posx"])
-    y_rqt = int(mensagem["posy"])
+    x_rqt = int(mensagem["x"])
+    y_rqt = int(mensagem["y"])
 
     limite_cima     = 120
     limite_baixo    = 530
@@ -101,9 +91,6 @@ def exibir_tela_online():
         limite_esquerda = 816
 
     print("VOCÊ É O PLAYER"+str(player))
-
-    Esperando = threading.Thread(target=esperando)
-    Esperando.start()
     
     Respondendo = threading.Thread(target=respondendo)
     Respondendo.start()

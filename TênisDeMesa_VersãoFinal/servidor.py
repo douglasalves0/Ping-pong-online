@@ -4,6 +4,10 @@ import random
 import json
 from time import sleep
 
+HOST = "localhost"
+
+conexoes = []
+jogadores_online = 0
 
 x_rqt1 = 15
 y_rqt1 = 330
@@ -11,7 +15,7 @@ y_rqt1 = 330
 x_rqt2 = 1045
 y_rqt2 = 330
 
-def recebendo(conn, cliente, pos):
+def recebendo(conn, cliente):
 
     global conexoes
 
@@ -21,46 +25,31 @@ def recebendo(conn, cliente, pos):
     global y_rqt2
 
     while(1):
+
         data = json.loads(conn.recv(1024).decode())
-        if(pos == 0):
-            x_rqt1 = data["posx"]
-            y_rqt1 = data["posy"]
+        conn, cliente = (0,0)
+        pack = {}
+
+        if(data["player"] == 1):
+            x_rqt1 = data["x"]
+            y_rqt1 = data["y"]
+            conn, cliente = conexoes[0]
+            pack = {
+                "x":x_rqt2,
+                "y":y_rqt2
+            }
         else:
-            x_rqt2 = data["posx"]
-            y_rqt2 = data["posy"]
-
-def enviando(conn, cliente, pos):
-
-    global conexoes
-
-    global x_rqt1
-    global x_rqt2
-    global y_rqt1
-    global y_rqt2
-        
-    while True:
-
-        x = 0
-        y = 0
-
-        if(pos == 0):
-            x = x_rqt2
-            y = y_rqt2
-        else:
-            x = x_rqt1
-            y = y_rqt1
-
-        pack = {
-            "x":x,
-            "y":y
-        }
+            x_rqt2 = data["x"]
+            y_rqt2 = data["y"]
+            conn, cliente = conexoes[1]
+            pack = {
+                "x":x_rqt1,
+                "y":y_rqt1
+            }
 
         conn.send(json.dumps(pack).encode())
-        sleep(0.05)
 
 
-
-HOST = "localhost"
 PORT = int(input("Digite a porta em que deseja abrir o servidor: "))
 
 tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -69,12 +58,12 @@ tcp.bind(origem)
 tcp.listen(5)
 print(f"CONECTADO COM SUCESSO A {HOST}:{PORT}")
 
-conexoes = []
-jogadores_online = 0
-
 while(jogadores_online < 2):
     conn, cliente = tcp.accept()
     nome = conn.recv(1024).decode()
+    if(nome.startswith("SSH") or nome == ""):
+        print("TENTATIVA DE CONEXÃO DO NGROK BLOQUEADA")
+        continue
     print("CONECTADO COM SUCESSO A <" + nome + ">.")
     conexoes.append((conn,cliente))
     jogadores_online+=1
@@ -117,27 +106,29 @@ y_bola = posicao_saque[1]
 
 #começa a tratar dos problemas do cliente
 for i in range(len(conexoes)):
+
     posx = -1
     posy = -1
+
     if(i+1 == 1):
         posx = x_rqt1
         posy = y_rqt1
     else:
         posx = x_rqt2
         posy = y_rqt2
+
     envio = {
         "player":i+1,
-        "posx":posx,
-        "posy":posy
+        "x":posx,
+        "y":posy
     }
 
     conn, cliente = conexoes[i]
     
-    conexoes[i][0].send(json.dumps(envio).encode())
+    conn.send(json.dumps(envio).encode())
+    conn.recv(1024).decode()
 
-    t = threading.Thread(target=recebendo, args=(conn, cliente, i))
+    t = threading.Thread(target=recebendo, args=(conn, cliente))
     t.start()
-    e = threading.Thread(target=enviando, args=(conn, cliente, i))
-    e.start()
 
 
