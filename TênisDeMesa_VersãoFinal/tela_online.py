@@ -12,6 +12,7 @@ from random import randint
 from time import sleep
 import socket
 import json
+import time
 
 x_rqt = -1
 y_rqt = -1
@@ -21,8 +22,11 @@ y2_rqt = -1
 x_bola = -1
 y_bola = -1
 colidiu = False
+latencia = 0
 
 def respondendo():
+
+    global latencia
 
     global x_rqt
     global y_rqt
@@ -45,8 +49,11 @@ def respondendo():
             "y":y_rqt
         }
 
+        ini = time.time()
         tcp.send(json.dumps(pack).encode())
         data = json.loads(tcp.recv(1024).decode())
+        fim = time.time()
+        latencia = (fim-ini)*1000
         x2_rqt = data["x"]
         y2_rqt = data["y"]
         x_bola = data["x_bola"]
@@ -120,6 +127,7 @@ def exibir_tela_online():
     fonteTexto = pygame.font.SysFont(const.fonte, 18, True)
     fonteNumero = pygame.font.SysFont(const.fonte, 25, True)
     fonteAviso = pygame.font.SysFont(const.fonte, 45, True)
+    fonteLatencia = pygame.font.SysFont(const.fonte, 15, True)
 
     imagem_seta = pygame.image.load(const.img_seta_direita)
     imagem_seta = pygame.transform.scale(imagem_seta, (32, 32))
@@ -164,10 +172,13 @@ def exibir_tela_online():
             som_raquete.play()
             colidiu = False
 
+        ping = fonteLatencia.render(f"Latência: {latencia:.2f}ms", True, const.cor_branca)
+
         #ATUALIZANDO A POSIÇÃO DOS ELEMENTOS DO JOGO
         const.tela.blit(raquete, (x_rqt, y_rqt))
         const.tela.blit(raquete2,(x2_rqt, y2_rqt))
         const.tela.blit(bola, (x_bola, y_bola))
+        const.tela.blit(ping, (50, 625))
         pygame.display.flip()
 
         
